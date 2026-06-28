@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Orcamento Rapido",
+    "name": "Orçamento Rápido",
     "slug": "orcamento-rapido",
     "version": "0.1.0",
     "orientation": "portrait",
@@ -27,6 +27,14 @@
     },
     "web": {
       "favicon": "./assets/icon.png"
-    }
+    },
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Permita escolher a logo da empresa para aparecer no PDF do orçamento."
+        }
+      ]
+    ]
   }
 }
