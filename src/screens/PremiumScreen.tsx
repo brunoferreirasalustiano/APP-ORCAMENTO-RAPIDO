@@ -10,30 +10,30 @@ import { formatDate } from "../lib/dates";
 import { useAppState } from "../hooks/useAppState";
 
 const benefits = [
-  "Orcamentos ilimitados",
+  "Orçamentos ilimitados",
   "PDF profissional",
   "Envio pelo WhatsApp",
   "Envio por e-mail",
-  "Historico local",
+  "Histórico local",
   "Dados da empresa salvos",
-  "Sem marca d'agua",
-  "Pagamento unico"
+  "Sem marca d'água",
+  "Pagamento único"
 ];
 
 export function PremiumScreen() {
-  const { trial, trialInfo, unlockPremiumForTesting } = useAppState();
+  const { hasPremiumEntitlement, trialInfo, unlockPremiumForTesting } = useAppState();
 
   return (
-    <Screen title="Premium" subtitle="Pague uma unica vez e use para sempre. Sem mensalidade. Sem complicacao.">
+    <Screen title="Premium" subtitle="Pague uma única vez e use para sempre. Sem mensalidade. Sem complicação.">
       <Card style={styles.hero}>
-        <Text style={styles.kicker}>Desbloqueio vitalicio</Text>
+        <Text style={styles.kicker}>Desbloqueio vitalício</Text>
         <Text style={styles.price}>{PREMIUM_PRICE}</Text>
         <Text style={styles.copy}>
-          {trial.isPremium
-            ? "Seu Premium esta ativo neste aparelho."
+          {hasPremiumEntitlement
+            ? "Seu Premium está ativo neste aparelho."
             : trialInfo.isActive
-              ? `Seu teste gratis termina em ${formatDate(trialInfo.endsAt)}.`
-              : "Seu teste gratis terminou. Continue criando orcamentos profissionais."}
+              ? `Seu teste grátis termina em ${formatDate(trialInfo.endsAt)}.`
+              : "Seu teste grátis terminou. Continue criando orçamentos profissionais."}
         </Text>
         <View style={styles.benefits}>
           {benefits.map((benefit) => (
@@ -43,20 +43,24 @@ export function PremiumScreen() {
           ))}
         </View>
         <Button
-          title={trial.isPremium ? "Premium liberado" : IS_DEV_BUILD ? "Desbloquear Premium" : "Compra indisponivel"}
+          title={hasPremiumEntitlement ? "Premium liberado" : IS_DEV_BUILD ? "Desbloquear Premium" : "Compra indisponível"}
           variant="premium"
-          disabled={trial.isPremium}
+          disabled={hasPremiumEntitlement}
           onPress={() => {
             if (!IS_DEV_BUILD) {
-              Alert.alert("Compra indisponivel", "Integre Google Play Billing antes de publicar este fluxo.");
+              Alert.alert("Compra indisponível", "Integre Google Play Billing antes de publicar este fluxo.");
               return;
             }
             unlockPremiumForTesting();
-            Alert.alert("Premium liberado", "Nesta versao MVP o desbloqueio esta simulado.");
+            Alert.alert("Premium liberado", "Nesta versão MVP o desbloqueio está disponível apenas em desenvolvimento.");
           }}
         />
-        <Button title="Restaurar compra" variant="secondary" onPress={() => Alert.alert("Restaurar compra", `Na versao Play Store, consultar ${PREMIUM_PRODUCT_ID}.`)} />
-        <Text style={styles.footnote}>Na publicacao da Play Store, este fluxo deve ser conectado ao Google Play Billing.</Text>
+        <Button
+          title="Restaurar compra"
+          variant="secondary"
+          onPress={() => Alert.alert("Restaurar compra", `Na versão Play Store, consultar ${PREMIUM_PRODUCT_ID}.`)}
+        />
+        <Text style={styles.footnote}>Na publicação da Play Store, este fluxo deve ser conectado ao Google Play Billing.</Text>
       </Card>
     </Screen>
   );

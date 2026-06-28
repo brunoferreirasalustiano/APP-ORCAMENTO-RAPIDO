@@ -7,6 +7,7 @@ export type Company = {
   email: string;
   address: string;
   document: string;
+  logoUri: string;
 };
 
 export type QuoteItem = {
@@ -26,6 +27,7 @@ export type Quote = {
   plate: string;
   validUntil: string;
   warranty: string;
+  paymentMethod: string;
   notes: string;
   discount: number;
   items: QuoteItem[];
@@ -34,12 +36,20 @@ export type Quote = {
 export type TrialState = {
   firstOpenDate: string;
   trialDays: number;
-  isPremium: boolean;
+};
+
+export type EntitlementSource = "none" | "google_play_unverified" | "google_play_pending" | "development_override";
+
+export type EntitlementState = {
+  hasPremiumAccess: boolean;
+  source: EntitlementSource;
   purchaseProductId: string | null;
+  verifiedAt: string | null;
 };
 
 export type PersistedAppState = {
   trial: TrialState;
+  entitlement: EntitlementState;
   company: Company;
   currentQuote: Quote;
   quotes: Quote[];

@@ -31,6 +31,7 @@ export function createBlankQuote(sequence = 1): Quote {
     plate: "",
     validUntil: "",
     warranty: "",
+    paymentMethod: "",
     notes: "",
     discount: 0,
     items: [createBlankItem()]

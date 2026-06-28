@@ -12,19 +12,21 @@ type ScreenProps = {
 };
 
 export function Screen({ title, subtitle, children }: ScreenProps) {
-  const { trial, trialInfo } = useAppState();
+  const { hasPremiumEntitlement, trialInfo } = useAppState();
 
   return (
     <SafeAreaView edges={["top"]} style={styles.safe}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={styles.header}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.kicker}>Orcamento Rapido</Text>
+            <Text style={styles.kicker}>Orçamento Rápido</Text>
             <Text style={styles.title}>{title}</Text>
             {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
           </View>
           <View style={styles.badge}>
-            <Text style={styles.badgeText}>{trial.isPremium ? "Premium ativo" : `${trialInfo.remainingDays} dias gratis`}</Text>
+            <Text style={styles.badgeText}>
+              {hasPremiumEntitlement ? "Premium ativo" : `${trialInfo.remainingDays} dias grátis`}
+            </Text>
           </View>
         </View>
         {children}

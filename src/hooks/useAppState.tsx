@@ -1,8 +1,12 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 
-import { PREMIUM_PRODUCT_ID } from "../constants/business";
 import { IS_DEV_BUILD } from "../constants/runtime";
-import { getTrialInfo } from "../lib/dates";
+import { getTrialInfo, isQuoteValidUntilBeforeIssueDate } from "../lib/dates";
+import {
+  canUsePremiumFeature as canUsePremiumFeatureFromEntitlement,
+  createDevelopmentEntitlement,
+  isVerifiedPremium
+} from "../lib/entitlement";
 import { createBlankItem, createBlankQuote, duplicateQuote } from "../lib/quote";
 import { createInitialState, loadPersistedState, savePersistedState } from "../lib/storage";
 import type { Company, PersistedAppState, Quote, QuoteItem, TrialInfo } from "../types/domain";
@@ -10,6 +14,7 @@ import type { Company, PersistedAppState, Quote, QuoteItem, TrialInfo } from "..
 type AppContextValue = PersistedAppState & {
   isHydrated: boolean;
   trialInfo: TrialInfo;
+  hasPremiumEntitlement: boolean;
   canUsePremiumFeature: boolean;
   updateCompany: (patch: Partial<Company>) => void;
   updateCurrentQuote: (patch: Partial<Quote>) => void;
@@ -114,6 +119,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       return { ok: false as const, reason: "Informe o nome do cliente." };
     }
 
+    if (isQuoteValidUntilBeforeIssueDate(state.currentQuote.validUntil, state.currentQuote.createdAt)) {
+      return { ok: false as const, reason: "A validade não pode ser anterior à data de emissão." };
+    }
+
     setPersistedState((previous) => {
       const existingIndex = previous.quotes.findIndex((quote) => quote.id === previous.currentQuote.id);
       const quotes = [...previous.quotes];
@@ -128,7 +137,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     });
 
     return { ok: true as const };
-  }, [setPersistedState, state.currentQuote.clientName]);
+  }, [setPersistedState, state.currentQuote.clientName, state.currentQuote.createdAt, state.currentQuote.validUntil]);
 
   const startNewQuote = useCallback(() => {
     setPersistedState((previous) => ({
@@ -169,22 +178,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     setPersistedState((previous) => ({
       ...previous,
-      trial: {
-        ...previous.trial,
-        isPremium: true,
-        purchaseProductId: PREMIUM_PRODUCT_ID
-      }
+      entitlement: createDevelopmentEntitlement()
     }));
   }, [setPersistedState]);
 
   const trialInfo = useMemo(() => getTrialInfo(state.trial), [state.trial]);
-  const canUsePremiumFeature = state.trial.isPremium || trialInfo.isActive;
+  const hasPremiumEntitlement = isVerifiedPremium(state.entitlement);
+  const canUsePremiumFeature = canUsePremiumFeatureFromEntitlement(state.entitlement, trialInfo);
 
   const value = useMemo<AppContextValue>(
     () => ({
       ...state,
       isHydrated,
       trialInfo,
+      hasPremiumEntitlement,
       canUsePremiumFeature,
       updateCompany,
       updateCurrentQuote,
@@ -201,6 +208,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       addQuoteItem,
       canUsePremiumFeature,
       duplicateSavedQuote,
+      hasPremiumEntitlement,
       isHydrated,
       openQuote,
       removeQuoteItem,

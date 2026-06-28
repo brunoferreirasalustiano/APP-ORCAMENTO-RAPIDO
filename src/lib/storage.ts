@@ -1,8 +1,10 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { TRIAL_DAYS } from "../constants/business";
+import { IS_DEV_BUILD } from "../constants/runtime";
+import { createEmptyEntitlement } from "./entitlement";
 import { createBlankItem, createBlankQuote } from "./quote";
-import type { Company, PersistedAppState, Quote, QuoteItem, TrialState } from "../types/domain";
+import type { Company, EntitlementState, PersistedAppState, Quote, QuoteItem, TrialState } from "../types/domain";
 
 export const STORAGE_KEY = "orcamento-rapido-state-v2";
 
@@ -10,17 +12,17 @@ export function createInitialState(): PersistedAppState {
   return {
     trial: {
       firstOpenDate: new Date().toISOString(),
-      trialDays: TRIAL_DAYS,
-      isPremium: false,
-      purchaseProductId: null
+      trialDays: TRIAL_DAYS
     },
+    entitlement: createEmptyEntitlement(),
     company: {
       businessName: "",
       ownerName: "",
       whatsapp: "",
       email: "",
       address: "",
-      document: ""
+      document: "",
+      logoUri: ""
     },
     currentQuote: createBlankQuote(1),
     quotes: [],
@@ -39,9 +41,44 @@ function normalizeString(value: unknown): string {
 function normalizeTrial(value: Partial<TrialState> | undefined, fallback: TrialState): TrialState {
   return {
     firstOpenDate: normalizeString(value?.firstOpenDate) || fallback.firstOpenDate,
-    trialDays: normalizeNumber(value?.trialDays, fallback.trialDays),
-    isPremium: typeof value?.isPremium === "boolean" ? value.isPremium : fallback.isPremium,
-    purchaseProductId: typeof value?.purchaseProductId === "string" ? value.purchaseProductId : null
+    trialDays: fallback.trialDays
+  };
+}
+
+function normalizeEntitlementSource(value: unknown): EntitlementState["source"] {
+  if (value === "development_override") return "development_override";
+  if (value === "google_play_pending") return "google_play_pending";
+  if (value === "google_play" || value === "google_play_unverified") return "google_play_unverified";
+  return "none";
+}
+
+function normalizeEntitlement(
+  value: Partial<EntitlementState> | undefined,
+  fallback: EntitlementState,
+  legacyTrial: unknown
+): EntitlementState {
+  const legacyTrialState = legacyTrial as { isPremium?: unknown; purchaseProductId?: unknown } | undefined;
+  const source = normalizeEntitlementSource(value?.source);
+  const canRestoreDevelopmentAccess = IS_DEV_BUILD && source === "development_override";
+  const canMigrateLegacyDevelopmentAccess = IS_DEV_BUILD && typeof legacyTrialState?.isPremium === "boolean";
+  const legacyHasPremiumAccess = legacyTrialState?.isPremium === true;
+  const hasPremiumAccess =
+    canRestoreDevelopmentAccess && typeof value?.hasPremiumAccess === "boolean"
+      ? value.hasPremiumAccess
+      : canMigrateLegacyDevelopmentAccess
+        ? legacyHasPremiumAccess
+        : fallback.hasPremiumAccess;
+
+  return {
+    hasPremiumAccess,
+    source: hasPremiumAccess ? "development_override" : source,
+    purchaseProductId:
+      typeof value?.purchaseProductId === "string"
+        ? value.purchaseProductId
+        : typeof legacyTrialState?.purchaseProductId === "string"
+          ? legacyTrialState.purchaseProductId
+          : fallback.purchaseProductId,
+    verifiedAt: typeof value?.verifiedAt === "string" ? value.verifiedAt : fallback.verifiedAt
   };
 }
 
@@ -52,7 +89,8 @@ function normalizeCompany(value: Partial<Company> | undefined, fallback: Company
     whatsapp: normalizeString(value?.whatsapp),
     email: normalizeString(value?.email),
     address: normalizeString(value?.address),
-    document: normalizeString(value?.document)
+    document: normalizeString(value?.document),
+    logoUri: normalizeString(value?.logoUri)
   };
 }
 
@@ -79,6 +117,7 @@ function normalizeQuote(value: Partial<Quote> | undefined, fallback = createBlan
     plate: normalizeString(value?.plate),
     validUntil: normalizeString(value?.validUntil),
     warranty: normalizeString(value?.warranty),
+    paymentMethod: normalizeString(value?.paymentMethod),
     notes: normalizeString(value?.notes),
     discount: normalizeNumber(value?.discount, fallback.discount),
     items: items.length ? items : [createBlankItem()]
@@ -122,6 +161,7 @@ export async function loadPersistedState(): Promise<PersistedAppState> {
 
     return {
       trial: normalizeTrial(parsed.trial, initial.trial),
+      entitlement: normalizeEntitlement(parsed.entitlement, initial.entitlement, parsed.trial),
       company: normalizeCompany(parsed.company, initial.company),
       currentQuote,
       quotes,
