@@ -80,3 +80,45 @@ test("shareQuotePdf retorna shared false quando compartilhamento não está disp
   expect(result.shared).toBe(false);
   expect(__TEST_EXPO__.sharing.shared.length).toBe(0);
 });
+
+test("createQuotePdf sanitiza caracteres inválidos no nome do arquivo", async () => {
+  __TEST_EXPO__.reset();
+  const { pdf } = __TEST_RUNTIME__.loadModules({ dev: false });
+
+  const result = await pdf.createQuotePdf(company, { ...quote, id: 'ORC:7/2026?*"<>|' });
+
+  expect(result.uri).toBe("file:///documents/Orçamentos Rápidos/ORC-7-2026------.pdf");
+  expect(__TEST_EXPO__.fileSystem.madeDirectories[0]).toBe("file:///documents/Orçamentos Rápidos/");
+});
+
+test("HTML do PDF incorpora logo existente como data URI", async () => {
+  __TEST_EXPO__.reset();
+  const { pdf } = __TEST_RUNTIME__.loadModules({ dev: false });
+  __TEST_EXPO__.fileSystem.readFiles.set("file:///logo.png", "BASE64LOGO");
+
+  const html = await pdf.quoteHtml({ ...company, logoUri: "file:///logo.png" }, quote);
+
+  expect(__TEST_EXPO__.fileSystem.readRequests[0]).toBe("file:///logo.png");
+  expect(html).toContain('src="data:image/png;base64,BASE64LOGO"');
+});
+
+test("HTML do PDF ignora logo quando leitura falha", async () => {
+  __TEST_EXPO__.reset();
+  const { pdf } = __TEST_RUNTIME__.loadModules({ dev: false });
+
+  const html = await pdf.quoteHtml({ ...company, logoUri: "file:///logo-inexistente.png" }, quote);
+
+  expect(__TEST_EXPO__.fileSystem.readRequests[0]).toBe("file:///logo-inexistente.png");
+  expect(html.includes("data:image/png;base64")).toBe(false);
+});
+
+test("shareQuotePdf compartilha arquivo quando compartilhamento está disponível", async () => {
+  __TEST_EXPO__.reset();
+  const { pdf } = __TEST_RUNTIME__.loadModules({ dev: false });
+
+  const result = await pdf.shareQuotePdf(company, quote);
+
+  expect(result.shared).toBe(true);
+  expect(__TEST_EXPO__.sharing.shared.length).toBe(1);
+  expect(__TEST_EXPO__.sharing.shared[0]!.uri).toBe(result.uri);
+});

@@ -41,6 +41,7 @@ declare global {
       copiedFiles: Array<{ from: string; to: string }>;
       deletedUris: string[];
       madeDirectories: string[];
+      readRequests: string[];
       readFiles: Map<string, string>;
     };
     print: {

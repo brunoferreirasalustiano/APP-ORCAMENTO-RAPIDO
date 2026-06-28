@@ -62,3 +62,15 @@ test("Persistência salva estado serializado no AsyncStorage", async () => {
   const saved = JSON.parse(__TEST_STORAGE__.snapshot()[storage.STORAGE_KEY]!);
   expect(saved.quoteSequence).toBe(10);
 });
+test("Persistência recupera estado inicial seguro quando JSON salvo está corrompido", async () => {
+  const { storage } = __TEST_RUNTIME__.loadModules({ dev: false });
+
+  __TEST_STORAGE__.reset({ [storage.STORAGE_KEY]: "{json-invalido" });
+
+  const loaded = await storage.loadPersistedState();
+
+  expect(loaded.quoteSequence).toBe(2);
+  expect(loaded.quotes.length).toBe(0);
+  expect(loaded.currentQuote.id).toBe("ORC-0001");
+  expect(loaded.entitlement.source).toBe("none");
+});

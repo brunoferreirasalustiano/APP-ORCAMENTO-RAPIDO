@@ -11,6 +11,7 @@ const fileSystemState = {
   copiedFiles: [],
   deletedUris: [],
   madeDirectories: [],
+  readRequests: [],
   readFiles: new Map()
 };
 const printState = {
@@ -73,6 +74,7 @@ global.__TEST_EXPO__ = {
     fileSystemState.copiedFiles = [];
     fileSystemState.deletedUris = [];
     fileSystemState.madeDirectories = [];
+    fileSystemState.readRequests = [];
     fileSystemState.readFiles = new Map();
     printState.jobs = [];
     sharingState.available = true;
@@ -120,6 +122,7 @@ const fileSystemMock = {
     fileSystemState.existingUris.add(copy.to);
   },
   async readAsStringAsync(uri) {
+    fileSystemState.readRequests.push(uri);
     if (!fileSystemState.readFiles.has(uri)) {
       throw new Error(`No mocked file for ${uri}`);
     }
