@@ -17,10 +17,10 @@ export function HistoryScreen({ navigation }: Props) {
   const { quotes, openQuote, duplicateSavedQuote, canUsePremiumFeature } = useAppState();
 
   return (
-    <Screen title="Historico" subtitle="Abra, revise e reaproveite orcamentos salvos no aparelho.">
+    <Screen title="Histórico" subtitle="Abra, revise e reaproveite orçamentos salvos no aparelho.">
       <Card style={styles.list}>
         {quotes.length === 0 ? (
-          <EmptyState title="Nenhum orcamento salvo" description="Crie o primeiro orcamento para manter tudo organizado no historico." />
+          <EmptyState title="Nenhum orçamento salvo" description="Crie o primeiro orçamento para manter tudo organizado no histórico." />
         ) : (
           quotes.map((quote) => (
             <View key={quote.id} style={styles.item}>
@@ -44,7 +44,7 @@ export function HistoryScreen({ navigation }: Props) {
                   onPress={() => {
                     if (!canUsePremiumFeature) {
                       navigation.navigate("Premium");
-                      Alert.alert("Premium", "Desbloqueie o Premium para duplicar orcamentos.");
+                      Alert.alert("Premium", "Desbloqueie o Premium para duplicar orçamentos.");
                       return;
                     }
                     duplicateSavedQuote(quote.id);
